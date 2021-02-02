@@ -1,0 +1,157 @@
+---
+title: 'w271: Homework 3 (Due: 4pm Monday Week 4)'
+author: "Grace Lin"
+geometry: margin=1in
+output:
+  html_document:
+    df_print: paged
+  number_sections: yes
+  pdf_document: null
+  toc: yes
+fontsize: 11pt
+---
+
+# Due: 4pm Pacific Time on the Day of the Live Session of Week 4
+
+# Instructions (Please Read it Carefully!):
+
+*  $\textbf{Page limit of the pdf report: None, but please be reasonable}$
+* Page setup: 
+  * Use the following font size, margin, and linespace:
+    * fontsize=11pt
+    * margin=1in
+    * line_spacing=single
+
+* Submission:
+
+    * Each student submits his/her homework to the course github repo by the deadline; submission and revision made after the deadline will not be graded
+    
+    * Submit 2 files:
+        1. A pdf file that details your answers. Include all the R codes used to produce the answers. *Please do not suppress the codes in your pdf file.*
+        2. R markdown file used to produce the pdf file
+    * Use the following file-naming convensation; fail to do so will receive $10\%$ reduction in the grade:
+        * StudentFirstNameLastName_HWNumber.fileExtension
+        * For example, if the student's name is Kyle Cartman for homework 1, name your files as
+            * KyleCartman_HW1.Rmd
+            * KyleCartman_HW1.pdf
+    * Although it sounds obvious, please print your name on page 1 of your pdf and Rmd files.
+
+    * For statistical methods that we cover in this course, use only the R libraries and functions that are covered in this course. If you use libraries and functions for statistical modeling that we have not covered, you have to (1) provide an explanation of why such libraries and functions are used instead and (2) reference to the library documentation. **Lacking the explanation and reference to the documentation will result in a score of zero for the corresponding question.** For data wrangling and data visualization, you are free to use other libraries, such as dplyr, ggplot2, etc.
+
+  * For mathematical formulae, type them in your R markdown file. **Do not write them on a piece of paper, take a photo, and either insert the image file or sumbit the image file separately. Doing so will receive a $0$ for the whole question.**
+
+  *  Students are expected to act with regards to UC Berkeley Academic Integrity.
+
+
+\newpage
+
+In this lab, you will practice using some of the variable transformation techniques and the concepts and techniques of applying a binary logistic regression covered in the first three weeks. This lab uses the `Mroz` data set that comes with the *car* library. We examine this dataset in one of our live sessions. 
+
+# Some start-up scripts
+```{r, message = FALSE}
+rm(list = ls())
+library(car)
+require(dplyr)
+library(Hmisc)
+library(stargazer)
+
+# Describe the structure of the data, such as the number of
+# observations, the number of variables, the variable names, 
+# and type of each of the variables, and a few observations of each of
+# the variables
+str(Mroz)
+
+# Provide summary statistics of each of the variables 
+describe(Mroz)
+
+# For datasets coming with a R library, we can put "?" in front of a
+# dataset to display, under the help window, the description of the 
+# datasets
+#?Mroz
+```
+
+## Question 1:
+Estimate a binary logistic regression with `lfp`, which is a binary variable recoding the participation of the females in the sample, as the dependent variable. The set of explanatory variables includes `age`, `inc`, `wc`, `hc`, `lwg`, `totalKids`, and a quadratic term of `age`, called `age_squared`, where `totalKids` is the total number of children up to age $18$ and is equal to the sum of `k5` and `k618`.
+```{r}
+df <- Mroz
+
+df$totalKids <- df$k5 + df$k618
+
+df$age_squared <- df$age * df$age
+
+mod.fit <- glm(formula = lfp ~ age + inc + wc + hc + lwg + totalKids + I(age_squared), family = binomial(link=logit), data = df)
+
+mod.fit
+```
+
+## Question 2: 
+Is the age effect statistically significant? 
+```{r}
+
+mod.fit_2 <- glm(formula = lfp ~ inc + wc + hc + lwg + totalKids, family = binomial(link=logit), data = df)
+
+anova(mod.fit, mod.fit_2, test = "Chisq")
+```
+Model 2 (without age and age square) is statistically significant different from model 1(with age and age square). Thus, age effect is statistically significant.
+
+```{r}
+stargazer(mod.fit, mod.fit_2, type = 'text')
+```
+
+Because the p-value is much smaller than the chosen significance level of 0.05, age effect is statistically significant.
+
+## Questions 3: 
+What is the effect of a decrease in age by $5$ years on the odds of labor force participation for a female who was $45$ years of age.
+$$
+log(\frac{\pi}{1-\pi}) = -5.294073 + 0.318014 * Age -0.004114* Age^2 + ...
+$$
+
+The odds ratio for an increase in age by $c$ years is expressed in the following formula:
+$$
+OR = exp(c \beta_1 + c \beta_2(2 \times age + c) ) 
+$$
+$$
+= exp(0.318014*c + -0.004114* c (2 \times age + c) )
+$$
+```{r}
+c = 5
+age = 45
+effect = exp(0.318014*c + -0.004114* c (2 * age + c))
+cat('the effect is', effect)
+```
+
+## Question 4: 
+Estimate the profile likelihood confidence interval of the probability of labor force participation for females who were $40$ years old, had income equal to $20$, did not attend college, had log wage equal to 1, and did not have children.
+```{r}
+
+
+# Compute 95% Wald Confidence Interval
+ci.pi<-function(data, model, alpha){
+  linear.pred = predict(object = mod.fit, newdata = data_q4, type = "link", se = TRUE)
+  CI.lin.pred.lower = linear.pred$fit - qnorm(p = 1-alpha/2)*linear.pred$se
+  CI.lin.pred.upper = linear.pred$fit + qnorm(p = 1-alpha/2)*linear.pred$se
+  CI.pi.lower = exp(CI.lin.pred.lower) / (1 + exp(CI.lin.pred.lower))
+  CI.pi.upper = exp(CI.lin.pred.upper) / (1 + exp(CI.lin.pred.upper))
+  list(lower = CI.pi.lower, upper = CI.pi.upper)
+}
+
+```
+
+```{r}
+# Estimate the confidence interval 
+# If the husband does not have college education:
+data_q4 = data.frame(age = 40, inc = 20, wc = 'no', hc = 'no', lwg = 1, totalKids = 0, age_squared = 40*40 )
+
+ci_q4 = ci.pi(data=data_q4, model=mod.fit, alpha = 0.05)
+cat("If the husbdand does not have college education, estimated 95% Wald CI for Probability", as.numeric(ci_q4), "\n")
+
+```
+
+
+```{r}
+#if husband has college education:
+data_q4 = data.frame(age = 40, inc = 20, wc = 'no', hc = 'yes', lwg = 1, totalKids = 0, age_squared = 40*40 )
+
+
+ci_q4 = ci.pi(data=data_q4, model=mod.fit, alpha = 0.05)
+cat("If the husbdand has college education, Estimated 95% Wald CI for Probability", as.numeric(ci_q4), "\n")

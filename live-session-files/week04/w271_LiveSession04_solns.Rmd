@@ -1,0 +1,552 @@
+---
+title: 'Statistical Methods for Discrete Response, Time Series, and Panel Data: Live
+  ession 4'
+author: "Professor Jeffrey Yau"
+output:
+  pdf_document: 
+    latex_engine: xelatex
+  html_document: default
+---
+
+# Main Topics Covered in Lecture 4:
+
+  * Multinomial probability distribution
+  * $IJ$ contingency tables and inference using contingency tables
+  * The notion of independence
+  * Nominal response models
+  * Odds ratios in the context of nominal response models
+  * Ordinal logistical regression model
+  * Estimation and statistical inference of these models
+
+# Required Readings:
+
+**BL2015:** Christopher R. Bilder and Thomas M. Loughin. Analysis of Categorical Data with R. CRC Press. 2015.
+
+  - Ch.3 (Skip Sections 3.4.3, 3.5)
+
+# Agenda of Week 4 Live Session
+
+1. Quiz 3
+
+2. An Application of Multinomial Logistic Regressoin: Modeling Voters' Party - Evidence from the 2016 American National Election Survey
+
+\newpage
+
+# Recap some notations:
+
+- joint probability of the counts $N_j$
+
+- relationship among multiple multinomial random variables: $Y_i$
+
+$\pi_j = P(Y = j) \text{ where } j = 1,\dots,J \text{ and } \sum_{j=1}^J \pi_j = 1 $
+
+Given $n$ "*identical*" trials, $Y_1, \dots Y_n$
+
+$N_j = \sum_{i=1}^n I(Y_i = y)$
+
+$\sum_{j=1}^J n_j= 0$
+
+**Mulitnomial Probability Distribution:** The pmf for observation a particular set of counts $n_1,\dots,n_J$ (from **one** multinomial random variable) is
+$$
+P(N_1 = n_1, \dots, N_J = n_J) = \frac{n!}{\prod_{j=1}^J n_j!}\prod_{j=1}^J P(Y=j)^{n_j} = \frac{n!}{\prod_{j=1}^J n_j!}\prod_{j=1}^J \pi_j^{n_j}
+$$
+
+**Two Multinomial Random Variables**
+
+**$I \times J$ contingency tables**
+
+Two categorical variables: $X \text{ and } Y$
+
+$(X=i,Y=j)$
+
+$N_{ij}, i=1,\dots,I, j=1,\dots,J$
+
+$n_{+j} = \sum_{i=1}^I n_{ij}$ the total for column $j$
+
+$n_{i+} = \sum_{j=1}^J n_{ij}$ the total for row $i$
+
+$n_{++} = n$
+
+$$
+P(N_{11} = n_{11}, \dots, N_{IJ} = n_{IJ}) =
+\frac{n!}{\prod_{i=1}^I \prod_{j=1}^J n_{ij}!} \prod_{i=1}^I \prod_{j=1}^J P(X=i, Y=j)^{n_{ij}}
+$$
+
+Marginal distribution for $X$:
+$ \pi_{+} = P(X=i) \text{ for } i = 1,\dots,I$, which is multinomial with $n$ trials and probabilities $\pi_{1+},\dots\pi_{I+}$ and with marginal counts $n_{1+},\dots, n_{I+}$
+
+The marginal distribution for $Y$ can be defined in a similar manner.
+
+When $X$ does not affect the probabilities for the outcome of $Y$, we say that $Y$ is independent of $X$: $\pi_{ij} = \pi_{i+} \pi_{+j}$
+
+<!--
+**1-multinomial model vs. I-multinomial model**
+
+# Test for independence
+$$
+H_0: \pi_{ij} = \pi_{i+} \pi_{+j} \text{ for each } i,j \\
+
+H_a: \pi_{ij} \ne \pi_{i+} \pi_{+j} \text{ for each } i,j
+$$
+can be performed using *Peasron Chi-square test* and a *LRT*.
+
+## Difference between *Peasron Chi-square test* and a *LRT*.
+
+  - mechanics of conducting the tests
+  
+  - under large sample, they give similar results
+
+    - how large of the sample is considered large?
+    
+  - if the sample is not large enough, which test should we use?
+  
+  - test the validity of $chi^2$ $\chi^2$ approximization
+  
+\begin{align*}
+P(N_{11} = n_{11}, \dots, N_{IJ} = n_{IJ}) &= 
+\frac{n!}{\prod_{i=1}^I \prod_{j=1}^J n_{ij}!} \prod_{i=1}^I \prod_{j=1}^J P(X=i, Y=j)^{n_{ij}}
+\end{align*}
+
+-->
+
+\newpage
+# Introduction - Multinomial Logistic Regression
+
+Modeling the probabilities of a categorical response variable $Y$ with response categories $j = 1, \dots, J$ using explanatory varibles $x_1,\dots,x_p$.
+
+We use odds to compare any pair of response categories: $\frac{\pi_j}{\pi_{j'}}$
+
+Fix one of the categories as the base level, and model $J-1$ categories with respect to this level.
+
+Assuming category $1$ as the base level, the multinomial logistic regression is expressed as
+
+$$
+log \left( \frac{\pi_j}{\pi_1} \right) = \beta_{j0} + \beta_{j1} x_1 + \cdots + \beta_{jp} x_p
+$$
+for $j = 2, \dots , J$
+
+  - Notice that each response’s log-odds relate to the explanatory variables in a different way.
+  
+$$
+  \pi_1 = \frac{1}{1 + \sum_{j=2}^J exp(\beta_0 + \beta_{j1}x_1 + \cdots + \beta_{jp}x_p) }
+$$
+
+$$
+  \pi_j = \frac{exp(\beta_0 + \beta_{j1}x_1 + \cdots + \beta_{jp}x_p)}{1 + \sum_{j=2}^J exp(\beta_0 + \beta_{j1}x_1 + \cdots + \beta_{jp}x_p) }
+$$
+for $j = 2, \dots , J$
+
+<!--
+
+   - [JY] **Martin et al. 1998: kernels classification problem**
+
+   - [JY] look at exercise 19
+   
+   - [JY] deltaMethod(); pp 157, 158
+-->
+
+
+*********
+In this exercise, we want to model voters’ self identified party affiliation using their demographic characteristic and a handful of self-indentifying variables.The data was obtained from the **American National Election Survey**, which conducted a survey several months prior to the $2016$ American Presidential elections. *Note that the original survey data uses survey weights, which we will not use here.*
+
+The dataset “*w271_LiveSession04_data.csv*” contains a handful of variables from the survey, and these variables have been cleaned and modified for this exercise. This dataset contains the following variables:
+
+**Variable Name**            |          **Explanations**
+-----------------------------|----------------------------------------------
+ftwhite, ftblack, ftmuslim   | Feeling thermometer variables where respondents are asked to rate their favorability of whites, blacks, and muslims, on a 0 – 100 scale.
+-----------------------------| ----------------------------------------------
+Presjob                      | A seven point scale indicating respondents’ evaluation of President Obama. 1 = Very strongly approve; 7 = Very strongly disapprove
+-----------------------------| ----------------------------------------------
+Srv_spend                    | Seven point scale representing the degree to       which respondents believe that the government should provide or should not provide services:  1 = Government should provide many fewer services; 7 = Government should provide many more services.
+-----------------------------| ----------------------------------------------
+crimespend                   | A seven point scale representing degree to         which respondents think that the federal government should or should not increase federal spending on crime. 1 = Increased a great deal; 7 = Decreased a great deal
+-----------------------------| ----------------------------------------------
+ideo5                        | A five point scale of respondents’ self            reported ideology. 1 = Very liberal; 5 = Very conservative 
+-----------------------------| ----------------------------------------------
+party                        | Categorical variable indicating respondents’       party affiliation: Democrat, Independent, Republican
+-----------------------------| ----------------------------------------------
+age                          | Respondents’ age, as of 2016.
+-----------------------------| ----------------------------------------------
+race_white                   | Dummy variable taking a value of one if the        respondent is white and is zero otherwise.
+-----------------------------| ----------------------------------------------
+female                       | Dummy variable taking a value of one if the        respondent is female and is zero otherwise.
+
+
+The US has two major political parties. The Democratic Party is considered to be the ideologically libearl party while the Republican Party is considered to be the ideologically conservative party. A non-trivial proportion of American voters either identify themselves as being Independnet or supporting other parties. In this dataset, voters identify themselves as Democratic, Republican, or Independent. 
+
+<!--
+**What is the difference between modeling voters' party affiliation using a multinomial logistic regression model as opposed to using an ordinal logistic regression model? Under what circumstances would be OK to use an ordinal model?**
+-->
+
+#EDA 
+
+Setup Codes and Load Data
+```{r, warning=FALSE, message=FALSE}
+rm(list = ls())
+
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+
+# Load Libraries
+library(car)
+library(Hmisc)
+library(skimr)
+library(ggplot2)
+library(stargazer)
+library(gmodels) # For cross tabulation (SAS and SPSS style)
+
+library(MASS)
+library(mcprofile)
+library(vcd)
+library(nnet)
+
+#path <- "~/Documents/Teach/Cal/w271/course-main-dev/live-session-files/week04"
+#setwd(path)
+
+df <- read.csv("w271_LiveSession04_data.csv", stringsAsFactors = FALSE, header = TRUE, sep = ",")
+
+# Make data
+library(plyr)
+str(df)
+voters <- df %>%
+  dplyr::select(party, presjob, srv_spend,
+         age, female, race_white)
+voters$presjob <- revalue(as.factor(voters$presjob), 
+                          c("1"="Approve", "2"="Approve", 
+                            "3"="Neutral", "4"="Neutral",
+                            "5"="Neutral", "6"="Not Approve",
+                            "7"="Not Approve"))
+voters$srv_spend <- revalue(as.factor(voters$srv_spend), 
+                          c("1"="Low", "2"="Low", "3"="Low",
+                            "4"="Medium", "5"="Medium",
+                            "997"="Medium", "6"="High", "7"="High"))
+voters$female <- revalue(as.factor(voters$female), 
+                         c("0"="Male", "1"="Female"))
+voters$race_white <- revalue(as.factor(voters$race_white),
+                             c("0"="Non-White", "1"="White"))
+
+str(voters)
+skim(voters)
+
+write.csv(voters, file = "voters.csv", sep = ",", 
+           row.names = FALSE, col.names = TRUE)
+
+voters <- read.csv("voters.csv", stringsAsFactors = FALSE, header = TRUE, sep = ",")
+
+# Convert all the character variables to factor variables
+voters <- voters%>%
+  dplyr::mutate_if(sapply(voters, is.character), as.factor)
+```
+
+**Breakout-room Discussion:**
+  - Discuss the structure of the data
+  - Discuss the patterns of these variables 
+  - Discuss missing values and how you would typically handle them at work
+  - Add additional plots to enhance your EDA where needed
+  
+```{r, warning=FALSE, message=FALSE}
+library(dplyr)
+
+str(voters)
+skim(voters)
+describe(voters)
+
+# Number of incomplete cases in the dataset
+# There are a number of ways to accomplish this task
+# The first one will list the entire dataframe (when printed out to a pdf or html file) all of the observations with incomplete observations. The second one just count the number of missing data in each of the variables
+
+#voters[!complete.cases(voters),]
+sapply(voters, function(x) sum(is.na(x)))
+
+# There are still 81 observations with missing values.
+# Let's select only the data that we need before conducting the analysis. 
+
+# For a dataset this small, this step is not essential.  
+# For large datasets encountered in practice, it's always a good idea to retain only the data needed for the analysis. 
+
+# Note that I did not overwrite the original dataset; I have stories to tell about this point.
+
+# Number of incomplete cases in the dataset
+voters2 <- voters[complete.cases(voters),]
+
+# Convert all the character variables to factor variables
+#voters2 <- voters%>%
+#  mutate_if(sapply(voters, is.character), as.factor)
+
+
+# Reorder the categories of srv_spend
+voters2$srv_spend <- ordered(voters2$srv_spend, levels = c("Low", "Medium", "High"))
+
+# Attach the dataste
+attach(voters2)
+```
+
+**Pause and Discuss: Missing values**
+For now, we would simply exclude them in our analysis. *In practice, you do not just want to throw away observations without any investigation.*
+
+# EDA:
+
+Let's start with the basic:
+
+Recall that the Multinomial Probability Distribution takes the following form:
+
+$$ P(N_1 = n_1, \dots , N_J = n_j) = \frac{n!}{\prod_{j=1}^J} \prod_{j=1}^J \pi_j^{n_j} $$
+
+Independence of X and Y in the context of a product multinomial model means that the conditional probabilities for each Y are equal across the rows of the table.
+
+That is, for each $j$, 
+$$\pi_{j|1} = \pi_{j|2} = \dots = \pi_{j|I} = \pi_{+j}$$
+
+A test of independence specifies the following hypothesis:
+
+$$
+\begin{aligned}
+  H_0: \pi_{ij} &= \pi_{i+}\pi_{+j} \quad \forall \quad i,j \\
+  H_1: \pi_{ij} &\neq \pi_{i+}\pi_{+j} \quad \text{for some i or j}
+\end{aligned}  
+$$
+
+The test of independencde in this context can be conducted by Pearson chi-square test or likelihood ratio test, which we already discussed in lecture 1. The Pearson chi-square test statistic takes the following form
+
+$$
+X^2 = \sum_{i=1}^I \sum_{j=1}^J \frac{(n_{ij}-n_{i+}n_{+j}/n)^2}{n_{i+}n_{+j}/n}
+$$
+
+where $X^2 \sim \chi^2_{(I-1)(J-1)}$
+
+
+```{r, warning=FALSE, message=FALSE}
+# Descriptive statistics
+str(voters2)
+skim(voters2)
+describe(voters2)
+
+#Univariate Analysis
+apply(voters2, 2, table)
+exam_cat_var = function(var.names) {
+  round(prop.table(table(var.names)),2)
+}
+apply(voters2, 2, exam_cat_var)
+
+#test_indep = function(data, var1, var2) {
+#  table <- xtabs(~var1 + var2, data = data)
+#  round(prop.table(table),2)
+#  chisq.test(table)
+#  assocstats(table)
+#}
+
+#test_indep(voters2, party, presjob)
+#xtabs(~party+presjob, data=voters2)
+#round(prop.table(xtabs(~party+presjob, data=voters2)),2)
+
+# Bivariate Analysis
+cross_tab = function(xvar, yvar) {
+  CrossTable(xvar, yvar, digits = 2,
+           prop.c = FALSE, prop.t = FALSE)
+}
+# President Approval by Party
+cross_tab(voters2$presjob, voters2$party)
+# Spending Sentiment by Party
+cross_tab(voters2$srv_spend, voters2$party)
+# Gender by Party
+cross_tab(voters2$female, voters2$party)
+# Race by Party
+cross_tab(voters2$race_white, voters2$party)
+# Age Distribution by Party
+ggplot(voters2, aes(factor(party), age)) +  
+  geom_boxplot(aes(fill = factor(party))) + 
+  ggtitle("Age by Party Affiliation") + 
+  theme(plot.title = element_text(lineheight=1, face="bold")) 
+
+# Age Distribution by President Approval
+ggplot(voters2, aes(factor(presjob), age)) +  
+  geom_boxplot(aes(fill = factor(presjob))) + 
+  ggtitle("Age Distribution by President Approval") + 
+  theme(plot.title = element_text(lineheight=1, face="bold")) 
+
+# Age Distribution by Spending Sentiment
+ggplot(voters2, aes(factor(srv_spend), age)) +  
+  geom_boxplot(aes(fill = factor(srv_spend))) + 
+  ggtitle("Age Distribution by Spending Sentiment") + 
+  theme(plot.title = element_text(lineheight=1, face="bold")) 
+
+# President Approval by Spending Sentiment, Gender, and Race
+cross_tab(voters2$srv_spend, voters2$presjob)
+cross_tab(voters2$female, voters2$presjob)
+cross_tab(voters2$race_white, voters2$presjob)
+
+# Spending Sentiment by Party and Race
+cross_tab(voters2$female, voters2$srv_spend)
+cross_tab(voters2$race_white, voters2$srv_spend)
+```
+
+<!--
+  - Evidence suggests that party affiliation is not independent from respondents' gender or race. 
+  
+  - However, these contingnecy tables do not tell us if there is an ordered relationship between these demographic variables and party affiliation.
+
+
+**Based on this output, do you think that there is an ordered relationship between the demographic variables and party affiliation? Why or why not?**
+
+**Question: How could you explore the bivariate relationship between party and age? Can you think of a way where you can use a contingency table and chi-square test to test for independence?**
+-->
+
+# Multinomial Logistic Regression Model
+We are going to use a multinomial logistic regression model to model repondents' party affiliation using respondents' age, race, gender, their sentiment about service spending, and president approval as explanatory variables.
+
+In what follow, we will discuss the model estimation, statistical inference, model interpretation, and visualization of effect. As in other live sessions, many discussions occur verbally in the class and are not written in this file.
+
+To estimate a multinomial logistic regression, we use the `multinom()` function from the `nnet` package. It has the same structure as basically all of the other statistical modeling functions we have studied so far.
+
+** Breakout-room Discussion: **
+  - Estimate a multinomial logistic regression with only `age`, `female`, and `race_white` as explanatory variables. Call the regression `mod.nomial1`
+  - Discussion the estimation results. For instance, is being a male more or less likely to be a Democrat (relative to being a Republican)? Answer questions like this using your regression results.
+
+
+```{r}
+# mod.nominal1 <- multinom(FORMULA, data = voters2)
+# summary(YOUR ESTIMATED MODEL)
+
+mod.nominal1 <- multinom(party ~  age + female + race_white, data = voters2)
+summary(mod.nominal1)
+```
+
+The *levels()* function show that *Democrat* is stored as the first level of the variable *party*. Therefore, *multinom()* function would use it as the base level.
+
+The estimated regressions are
+
+**Equation 1: Independent vs. Democrat**
+$$
+log \left( \frac{\widehat{\pi}_{Independent}}{\widehat{\pi}_{Democrat}} \right) = -0.8747 - 0.0047age + 0.5348I(Female) + 0.9389I(White)
+$$
+
+**Equation 2: Republican vs. Democrat**
+$$
+log \left( \frac{\widehat{\pi}_{Republican}}{\widehat{\pi}_{Democrat}} \right) = -2.0041 + 0.0067age + 0.1968I(Female) + 1.4632I(White)
+$$
+
+# Statistical Inference
+
+** Breakout-room Discussion: **
+  - As starter, test the existance of the age effect in the logit of independent vs democrat equation. (Hint: For simplicity, use Wald test.)
+  - Test the existence of effect of an explanatory variable on all response categories
+
+Hypothesis such as $H_0: \beta_{jr}=0$ vs $H_a: \beta_{jr} \ne 0$ can be performed by Wald-type test. For instance, we want to test the existance of the age effect in the logit of independent vs democrat equation, we construct the following equation
+
+$$
+\frac{\hat{\beta}_{12}}{\sqrt{\widehat{Var}(\beta_{12})}} = \frac{-0.0047}{0.0043} = -1.08
+$$
+
+```{r}
+# YOUR CODE TO BE HERE
+str(mod.nominal1)
+coef(mod.nominal1)
+sqrt(vcov(mod.nominal1))
+coef(mod.nominal1)[1,2]
+sqrt(vcov(mod.nominal1)[2,2])
+coef(mod.nominal1)[1,2]/sqrt(vcov(mod.nominal1)[2,2])
+```
+
+To test the existence of effect of an explanatory variable on all response categories, we set the hypotheses as follow:
+
+$$
+H_0: \beta_{jr} = 0, \quad j=2,\dots,J \quad \text{assuming j=1 is the base category}
+H_a: \beta_{jr} \ne 0, \quad \text{for some } j
+$$
+
+```{r}
+library(car)
+Anova(mod.nominal1)
+```
+
+The numbers in the column *LR Chisq* is $-2log(\Lambda)$. For instance, this transformed test statistic is $14.738$ for the explanatory *female*, and its corresponding p-value ($Pr(>Chisq)$) is less than 0.001.
+
+
+# Model Interpretation
+** Breakout-room Discussion: **
+  - Interpret the estimated coefficients of the model
+  
+To interpret the coefficients, we first exponentiate the estimated coefficients
+
+```{r}
+round(exp(coefficients(mod.nominal1)),2)
+#round(1/exp(coefficients(mod.nominal1)),2)
+```
+
+<!--
+Some examples interpretations are included below:
+
+The estimated odds of being a Republican (relative to being a Democrat) change by $4.3$ times for white, holding age, gender, and srv_spend constant.
+
+The estimated odds of being a Independent (relative to being a Democrat) change by $2.6$ times for white, holding age, gender, and srv_spend constant.
+
+Likewise,
+
+The estimated odds of being a Republican (relative to being a Democrat) change by $0.58$ times for female, holding age and gender constant.
+*Put it in a "business" language, the estimated odds of being a Republican (relative to being a Democrat) is 42% less for female (related to male) with the same age, race, and sentiment towards service spending by the government.*
+
+To estimate the probability of being in a particular party, one has to first assign values to the explanatory variables in the estiamted model. In our case, the explanatory variables are *female*, *race_white*, *age*, and *srv_spend*. 
+-->
+
+
+*Note: for presentation purpose only, I use four decimal places in the formula below.*
+
+$\pi_{Democrat}$
+$$
+\widehat{\pi}_{Democrat} = \frac{1}{1 + exp(-0.3726 -0.5425female + 0.9540white -0.0046age +0.0002srv_{spend})  + exp(-1.8061 - 0.1971female + 1.4634white + 0.0067age +0.0000srv_{spend})}
+$$
+
+$\pi_{Independent}:$
+$$
+\widehat{\pi}_{Independent} = \frac{exp(-0.3726 -0.5425female + 0.9540white -0.0046age +0.0002srv_{spend}}{1 + exp(-0.3726 -0.5425female + 0.9540white -0.0046age +0.0002srv_{spend})  + exp(-1.8061 - 0.1971female + 1.4634white + 0.0067age +0.0000srv_{spend})}
+$$
+
+$\pi_{Republican}:$
+$$
+\widehat{\pi}_{Republican} = \frac{exp(-1.8061 - 0.1971female + 1.4634white + 0.0067age +0.0000srv_{spend})}}{1 + exp(-0.3726 -0.5425female + 0.9540white -0.0046age +0.0002srv_{spend})  + exp(-1.8061 - 0.1971female + 1.4634white + 0.0067age +0.0000srv_{spend})}
+$$
+
+# Calculation of Estimated Probabilitie3s
+
+** Breakout-room Discussion **
+  - Estimated probabilities for each of the observations in the sample (it's also called "Fitted Value")
+
+In practice, however, one could obtaine these estimated probability by simply call the *predict()* function with the correct parameter and a dataset from which the estimated probabilities will be calculated.
+
+For example,
+```{r}
+# The columns are re-orderd to match the ordering of the explanatory variables in the model
+str(summary(voters2[,2:5][c(2,3,1,4)]))
+summary(voters2[,2:5][c(2,3,1,4)])
+skim(voters2[,2:5][c(2,3,1,4)])
+summary(mod.nominal1)
+```
+
+# Estimated probabilities for each of the observations in the sample (it's also called "Fitted Value")
+
+
+```{r}
+pi.hat <- predict(object = mod.nominal1, newdata = voters2, type = "probs")
+cbind(head(voters2[,2:6][c(3,4,5)]), round(head(pi.hat),2))
+```
+
+**Pasue and Discuss: Interpreting the estimated probabilities**
+
+<!--
+```{r}
+# Examine statistical signficance of model and coef.
+Anova(mod.nominal1)
+test.stats <- summary(mod.nominal1)$coefficients/summary(mod.nominal1)$standard.errors
+test.stats
+
+# It appears as if age might not be statistically significant!
+# Let's examine statistical sig using LRT
+
+mod.nominal.noage <- multinom(party ~ female + race_white, data = df)
+summary(mod.nominal.noage)
+anova(mod.nominal.noage, mod.nominal1)
+```
+
+According to the LRT, age is not a statistically signficant variable. However, it might be worth visualizing its impact on predicted probabilities. Let's examine the impact of age on respondents' party affiliation. We will generate predicted probability plots for white men between the ages of 20 and 80.
+
+-->
+

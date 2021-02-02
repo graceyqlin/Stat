@@ -1,0 +1,180 @@
+---
+title: 'w271: Homework 8 (Due: Week 9)'
+author: "Grace Lin"
+geometry: margin=1in
+output:
+  html_document:
+    df_print: paged
+  number_sections: yes
+  pdf_document: null
+  toc: yes
+fontsize: 11pt
+---
+
+# Due: By 4 p.m. Pacific Time on the Day of the Live Session in Week 9
+
+# Instructions (Please Read it Carefully!):
+
+*  $\textbf{Page limit of the pdf report: None, but please be reasonable}$
+* Page setup: 
+  * Use the following font size, margin, and linespace:
+    * fontsize=11pt
+    * margin=1in
+    * line_spacing=single
+
+* Submission:
+    * Homework needs to be completed individually; this is not a group project, but you are welcome to discuss with classmates.
+    * Each student submits his/her homework to the course github repo by the deadline; submission and revision made after the deadline will not be graded
+    * Submit 2 files:
+        1. A pdf file that details your answers. Include all the R codes used to produce the answers. *Please do not suppress the codes in your pdf file.*
+        2. R markdown file used to produce the pdf file
+    * Use the following file-naming convensation; fail to do so will receive $10\%$ reduction in the grade:
+        * StudentFirstNameLastName_HWNumber.fileExtension
+        * For example, if the student's name is Kyle Cartman for homework 1, name your files as
+            * KyleCartman_HW1.Rmd
+            * KyleCartman_HW1.pdf
+    * Although it sounds obvious, please write your name on page 1 of your pdf and Rmd files.
+
+    * For statistical methods that we cover in this course, use only the R libraries and functions that are covered in this course. If you use libraries and functions for statistical modeling that we have not covered, you have to  (1) provide an explanation of why such libraries and functions are used instead and (2) reference to the library documentation. **Lacking the explanation and reference to the documentation will result in a score of zero for the corresponding question.** For data wrangling and data visualization, you are free to use other libraries, such as dplyr, ggplot2, etc.
+
+  * For mathematical formulae, type them in your R markdown file. **Do not write them on a piece of paper, snap a photo, and either insert the image file or sumbit the image file separately. Doing so will receive a $0$ for that whole question.**
+
+  *  Students are expected to act with regards to UC Berkeley Academic Integrity.
+
+
+\newpage
+In the last live session, I demonstrated a complete worked-out example and had you repeated the process using another series.  In this week's homework, you will continue with the exercise using another data series `series3.csv`. Your task is to (1) build a time series model using the `arima()` function and the class of ARMA model, which includes AR, MA, and ARMA models and (2) conduct a **3-step** ahead foreast. 
+
+The ARMA time series model building process, which I outlined both in the async lecture and demonstrated in the last live session (for the AR and MA models), typically includes (1) a time series EDA, which requires an examination of the stationarity of the series and a determination of whether the class of ARMA model is a "reasonable" model as a starting point, (2) model estimation (perhaps a few models need to be attempted), (3) model selection based on some metrics, say AIC, (4) model diagnostic, and (5) model forecast (after a valid model is found). You need to explain why certain AR/MA/ARMA model is chosen as a starting point based on your time series EDA.
+
+```{r message=FALSE, warning=FALSE}
+# Clean up the workspace before we begin
+rm(list = ls())
+
+# Load required libraries
+library(car)
+library(dplyr)
+library(Hmisc)
+library(ggplot2)
+library(ggfortify)
+library(plotly)
+library(astsa)
+library(forecast)
+library(fpp2)
+
+# Set working directory
+#wd = "YOUR DIRECTORY HERE"
+# setwd(wd)
+```
+
+
+```{r}
+df <- read.csv("series3.csv", header = FALSE, sep=",")
+
+# Examine the data structure
+str(df)
+summary(df)
+names(df)
+head(df)
+tail(df)
+
+# Convert it into a time serie object
+df.ts = ts(df, frequency = 12)
+
+
+
+# Examine the converted data structure
+str(df.ts)
+head(cbind(time(df.ts),df.ts))
+```
+
+
+# Exploratory Time Series Data Analysis
+
+```{r}
+plot(df.ts)
+boxplot(df)
+boxplot(df.ts~cycle(df.ts))
+hist(df.ts)
+acf(df.ts)
+pacf(df.ts)
+plot(decompose(df.ts))
+
+# Results in ACF of oscillating to 0 is indicative of AR or ARMA model
+# Results in PACF that cuts off after 3 indicative of AR(3) model
+```
+
+```{r warning=FALSE}
+library(gridExtra)
+library(grid)
+
+#autoplot(acf(series1, plot = FALSE)) +
+#  ggtitle("ACF of A Given Monthly Time Series")
+#ggplotly()
+
+p1 = ggplot(df.ts, 
+       aes(x=time(df.ts), y=df.ts)) + 
+  geom_line(colour = "navy", size = 1) +
+  ggtitle("A Given Montly Time Series") +
+  theme(axis.title = element_text(size = rel(1.5)))
+
+p2 = ggplot(df, aes(x=V1)) +
+  geom_histogram(aes(fill = ..count..)) +
+  ggtitle("A Given Monthly Time Series") +
+  xlab("Series 1") + ylab("Frequency")
+
+p3 = autoplot(acf(df.ts, plot = FALSE)) +
+  ggtitle("ACF of A Given Monthly Time Series")
+
+p4 = autoplot(pacf(df.ts, plot = FALSE)) +
+  ggtitle("PACF of A Given Monthly Time Series")
+
+grid.arrange(p1, p2, p3, p4, ncol=2)
+```
+
+
+# Model Estimation and Diagnostics
+
+```{r}
+model = ar(x = df.ts, order.max = 12, method="yule-walker")
+model$order
+model$ar
+model$aic
+
+```
+
+
+```{r}
+
+# started with AR(3) based on the patterns exhibited in acf and pacf
+ar.fit1 <- arima(df.ts, c(ar=3,0,0)) 
+summary(ar.fit1)
+str(ar.fit1)
+
+# Note that auto.arima(), by default, select model based on AIC
+library(forecast)
+auto.arima(df.ts)
+
+# Examine the roots of the Characteristics equation
+plot(ar.fit1)
+Mod(polyroot(c(ar.fit1$coef)))
+
+
+# Model Evaluation (Residual Diagnostic)
+summary(ar.fit1$resid)
+str(ar.fit1$resid)
+plot(ar.fit1$resid)
+
+par(mfrow=c(2,2))
+plot(rnorm(120), type="l", main="Gaussian White Noise")
+plot(ar.fit1$resid[-c(1:2)], type="l", main="Residuals: t-plot")
+hist(ar.fit1$resid)
+acf(ar.fit1$resid[-c(1:2)], main="ACF of the Residual Series")
+pacf(ar.fit1$resid[-c(1:2)], main="ACF of the Residual Series")
+
+Box.test(residuals(ar.fit1), lag=24, type="Ljung")
+
+tail(cbind(time(df.ts),df.ts))
+ar.fit1.forecast = forecast(ar.fit1, h=12)
+plot(ar.fit1.forecast)
+```
